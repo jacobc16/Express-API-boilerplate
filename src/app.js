@@ -6,17 +6,6 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
-const knex = require('knex')({
-  client: 'mysql2',
-  connection: {
-    host : process.env.MYSQL_HOST,
-    port : process.env.MYSQL_PORT,
-    user : process.env.MYSQL_USER,
-    password : process.env.MYSQL_PASSWD,
-    database : process.env.MYSQL_DB
-  }
-});
-
 const app = express();
 
 app.use(morgan('dev'));
@@ -51,7 +40,16 @@ try {
     f = f.replaceAll("\\", "/")
     f = f.replace("//", "/")
     f = f.replace(/[^/]*$/.exec(f)[0], "")
-    app.use(f, require(`${api}\\${js}`))
+    const router = require(`${api}\\${js}`);
+
+    // Check for middlewares in the router and add them
+    if(router.middlewares) {
+      router.middlewares.forEach(middleware => {
+        app.use(f, require(`${path.join(__dirname, "middlewares")}/__${middleware}`));
+      });
+    }
+
+    app.use(f, router);
   });
 } catch(e) {
   console.log(e)
@@ -62,11 +60,12 @@ const middleware = path.join(__dirname, "middlewares")
 // Load middlewares
 fs.readdir(middleware, function (err, files) {
   files.forEach(function (file) {
+    if(file.startsWith("__")) return;
+
     app.use(require(`${middleware}/${file}`))
   });
 });
 
 module.exports = {
   app,
-  knex
 };

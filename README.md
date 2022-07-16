@@ -8,8 +8,10 @@ Includes API Server utilities:
   * Helmet helps you secure your Express apps by setting various HTTP headers. It's not a silver bullet, but it can help!
 * [dotenv](https://www.npmjs.com/package/dotenv)
   * Dotenv is a zero-dependency module that loads environment variables from a `.env` file into `process.env`
-* [knex](https://www.npmjs.com/package/knex)
-  * A batteries-included, multi-dialect (MSSQL, MySQL, PostgreSQL, SQLite3, Oracle (including Oracle Wallet Authentication)) query builder for Node.js
+* [axios](https://axios-http.com/)
+  * Promise based HTTP client for the browser and node.js
+* [prisma](https://www.prisma.io/)
+  * Build faster with an open source ORM
 * [mysql2](https://www.npmjs.com/package/mysql2)
   * MySQL client for Node.js with focus on performance. Supports prepared statements, non-utf8 encodings, binary log protocol, compression, ssl much more
 
@@ -39,3 +41,7 @@ pnpm test
 ```
 pnpm dev
 ```
+
+## Information
+Any middleware prefixed with `__` will be ignored from global middlewares.
+Example `__jwt.js` will be ignored.
