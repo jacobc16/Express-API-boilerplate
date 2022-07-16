@@ -1,4 +1,4 @@
-const jwt = require("jsonwebtoken");
+const jwt = require('../jwt');
 
 module.exports = (req, res, next) => {
 	function fail() {
@@ -11,15 +11,16 @@ module.exports = (req, res, next) => {
 		return;
 	}
 
-	const token = req.headers.authorization.split(' ')[1];
-
-	if(!token || token.length === 0) {
+	const auth = req.headers.authorization.split(' ');
+	if(auth.length !== 2 || auth[0] !== 'Bearer') {
 		fail();
 		return;
 	}
 
+	const token = auth[1];
+
 	try {
-		const decoded = jwt.verify(token, process.env.JWT_SECRET);
+		const decoded = jwt.verify(token);
 		next();
 	} catch (err) {
 		fail();
