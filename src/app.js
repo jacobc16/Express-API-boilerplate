@@ -13,46 +13,69 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-const getAllFiles = function(dirPath, arrayOfFiles) {
-  let files = fs.readdirSync(dirPath)
+const getAllFiles = function(dirPath, directoriesArray) {
+  const directories = fs.readdirSync(dirPath);
 
-  arrayOfFiles = arrayOfFiles || []
+  directoriesArray = directoriesArray || {};
 
-  files.forEach(function(file) {
-    if (fs.statSync(dirPath + "/" + file).isDirectory()) {
-      arrayOfFiles = getAllFiles(dirPath + "/" + file, arrayOfFiles)
-    } else {
-      arrayOfFiles.push(path.join(__dirname, dirPath, "/", file))
+  let dir = dirPath.replace(path.join(__dirname, "api") + "/", "");
+  dir = dir !== path.join(__dirname, "api") ? dir : "index";
+
+  directories.forEach(function(directory) {
+    if (directoriesArray[dir] === undefined)
+      directoriesArray[dir] = {
+        files: [],
+        middlewares: [],
+      };
+
+    if (!fs.statSync(dirPath + "/" + directory).isDirectory()) {
+      if(directory === "__middlewares.js") {
+        directoriesArray[dir].middlewares = require(dirPath + "/" + directory);
+      }
+
+      if(directory.startsWith("__")) return;
+
+      directoriesArray[dir].files.push(dirPath + "/" + directory);
+      return;
     }
-  })
 
-  return arrayOfFiles
+    directoriesArray = getAllFiles(dirPath + "/" + directory, directoriesArray);
+  });
+
+  return directoriesArray;
 }
 
-const api = path.join(__dirname, "api")
+const api = path.join(__dirname, "api");
 
 // Load apis
 try {
-  getAllFiles(api).forEach(function (file) {
-    let f = file.replace(api, "")
-    f = f.replace(__dirname, "")
-    let js = f.replaceAll("\\\\", "")
-    f = f.replaceAll("\\", "/")
-    f = f.replace("//", "/")
-    f = f.replace(/[^/]*$/.exec(f)[0], "")
-    const router = require(`${api}\\${js}`);
+  const apis = getAllFiles(api);
+  Object.keys(apis).forEach(function(apiPath) {
+    const apiObj = apis[apiPath];
+    apiObj.files.forEach(function (file) {
+      let f = file.replace(api, "");
+      f = f.replace(__dirname, "");
+      let js = f.replaceAll("\\\\", "");
+      f = f.replaceAll("\\", "/");
+      f = f.replace("//", "/");
+      f = f.replace(/[^/]*$/.exec(f)[0], "");
+      const router = require(`${api}/${js}`);
 
-    // Check for middlewares in the router and add them
-    if(router.middlewares) {
-      router.middlewares.forEach(middleware => {
-        app.use(f, require(`${path.join(__dirname, "middlewares")}/__${middleware}`));
-      });
-    }
+      if(Object.keys(apiObj.middlewares).length > 0)
+        router.middlewares = [...apiObj.middlewares];
 
-    app.use(f, router);
+      // Check for middlewares in the router and add them
+      if(router.middlewares) {
+        router.middlewares.forEach(middleware => {
+          app.use(f, require(`${path.join(__dirname, "middlewares")}/__${middleware}`));
+        });
+      }
+
+      app.use(f, router);
+    });
   });
 } catch(e) {
-  console.log(e)
+  console.log(e);
 }
 
 const middleware = path.join(__dirname, "middlewares")
