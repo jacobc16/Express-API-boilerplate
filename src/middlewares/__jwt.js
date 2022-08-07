@@ -2,7 +2,7 @@ const jwt = require('../jwt');
 
 module.exports = (req, res, next) => {
 	function fail() {
-		res.status(403);
+		res.status(401);
 		res.send("Not authorized");
 	}
 
